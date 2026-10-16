@@ -1,0 +1,41 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+*.swp
+
+# 日志
+*.log
+logs/
+
+# 本地环境变量（含数据库密码等敏感信息）
+.env
+.env.local
+application-local.yml
+
+# 压测临时产物
+benchmark/*.class
+benchmark/codes.txt
+benchmark/urls.txt
+benchmark/*.txt
+
+# 系统
+.DS_Store
+Thumbs.db

@@ -1,0 +1,80 @@
+# ShardingSphere 扩容后配置（4 库 × 4 表 = 16 片）
+# 新路由：db = h % 4, table = (h / 4) % 4  （h = hashCode & 0x7fffffff）
+# 旧路由（2 库）：db = h % 2, table = (h / 2) % 4 —— 见 sharding-datasource.yml
+
+mode:
+  type: Standalone
+
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://127.0.0.1:3306/turbolink_db0?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: $${DB_PASSWORD::}
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://127.0.0.1:3306/turbolink_db1?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: $${DB_PASSWORD::}
+  ds_2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://127.0.0.1:3306/turbolink_db2?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: $${DB_PASSWORD::}
+  ds_3:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://127.0.0.1:3306/turbolink_db3?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: $${DB_PASSWORD::}
+
+rules:
+  - !SHARDING
+    tables:
+      t_short_link:
+        actualDataNodes: ds_${0..3}.t_short_link_${0..3}
+        databaseStrategy:
+          standard:
+            shardingColumn: short_code
+            shardingAlgorithmName: short-code-db-inline
+        tableStrategy:
+          standard:
+            shardingColumn: short_code
+            shardingAlgorithmName: short-link-tb-inline
+      t_link_access_stats:
+        actualDataNodes: ds_${0..3}.t_link_access_stats_${0..3}
+        databaseStrategy:
+          standard:
+            shardingColumn: short_code
+            shardingAlgorithmName: short-code-db-inline
+        tableStrategy:
+          standard:
+            shardingColumn: short_code
+            shardingAlgorithmName: access-stats-tb-inline
+
+    shardingAlgorithms:
+      short-code-db-inline:
+        type: INLINE
+        props:
+          # 扩容后：db = h % 4
+          algorithm-expression: ds_${(short_code.hashCode() & 0x7fffffff) % 4}
+      short-link-tb-inline:
+        type: INLINE
+        props:
+          # 扩容后：table = (h / 4) % 4
+          algorithm-expression: t_short_link_${((short_code.hashCode() & 0x7fffffff).intdiv(4)) % 4}
+      access-stats-tb-inline:
+        type: INLINE
+        props:
+          algorithm-expression: t_link_access_stats_${((short_code.hashCode() & 0x7fffffff).intdiv(4)) % 4}
+
+  - !SINGLE
+    tables:
+      - "*.*"
+    defaultDataSource: ds_0
+
+props:
+  sql-show: true

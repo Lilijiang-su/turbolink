@@ -1,0 +1,51 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: turbolink
+  datasource:
+    # 数据源交给 ShardingSphere-JDBC 管理（分库分表）
+    # placeholder-type=environment：允许 yml 中用 $${VAR::default} 从环境变量读密码
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    url: jdbc:shardingsphere:classpath:sharding-datasource.yml?placeholder-type=environment
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+# 短链业务配置
+turbolink:
+  # 号段发号器
+  sequence:
+    biz-type: short_link
+    step: 1000            # 每次从 DB 领取的号段长度
+    prefetch-threshold: 0.2  # 剩余不足 20% 时触发异步预取
+  # 短链域名前缀
+  domain: http://tl.cn/
+  # 缓存
+  cache:
+    local-max-size: 100000   # 本地缓存最大条数
+    local-ttl-seconds: 300   # 本地缓存 TTL
+    redis-ttl-seconds: 1800  # Redis 缓存 TTL
+    null-ttl-seconds: 60     # 空值缓存 TTL(防穿透兜底)
+  # 布隆过滤器
+  bloom:
+    expected-insertions: 10000000   # 预计元素数量
+    false-probability: 0.001        # 误判率
+
+# RocketMQ：跳转事件异步解耦
+rocketmq:
+  name-server: 127.0.0.1:9876
+  producer:
+    group: turbolink-producer
+    send-message-timeout: 3000
+  # 业务 topic
+turbolink-mq:
+  access-topic: TURBOLINK_ACCESS_TOPIC
+  access-consumer-group: turbolink-access-consumer
